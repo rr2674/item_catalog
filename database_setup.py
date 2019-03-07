@@ -23,13 +23,6 @@ class User(Base):
     username = Column(String(32), index=True)
     picture = Column(String)
     email = Column(String)
-    password_hash = Column(String(64))
-
-    def hash_password(self, password):
-        self.password_hash = pwd_context.encrypt(password)
-
-    def verify_password(self, password):
-        return pwd_context.verify(password, self.password_hash)
 
     def generate_auth_token(self, expiration=600):
     	s = Serializer(secret_key, expires_in = expiration)
@@ -66,8 +59,11 @@ class Item(Base):
     create_date = Column(DateTime, default=datetime.utcnow)
     category_id = Column(Integer, ForeignKey('category.id'))
     category = relationship(Category)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    user = relationship(User)
 
-# We added this serialize function to be able to send JSON objects in a
+
+# serialize function to be able to send JSON objects in a
 # serializable format
     @property
     def serialize(self):
@@ -77,7 +73,8 @@ class Item(Base):
             'description': self.description,
             'id': self.id,
             'create_date': self.create_date.strftime('%Y%m%d'),
-            'category': self.category.name
+            'category': self.category.name,
+            'user': self.user.username
         }
 
 
