@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 
-import sys
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 
 from database_setup import Base, Category, Item, User
@@ -10,8 +9,15 @@ engine = create_engine('sqlite:///assignment4.db')
 Base.metadata.bind = engine
 
 DBSession = sessionmaker(bind=engine)
-
 session = DBSession()
+
+#q = session.query(Item).all()
+#print [i.serialize for i in q]
+#sys.exit()
+
+#q = session.query(Item).order_by(asc(Item.name)).all()
+#print [i.serialize for i in q]
+#sys.exit()
 
 users = [
 ('Bob Whatever', '', 'r@comcast.net'),
@@ -50,4 +56,7 @@ for category, items in categories_tuples:
         session.commit()
 
 q = session.query(Item).all()
+print [i.serialize for i in q]
+
+q = session.query(Item).order_by(asc(Item.name))
 print [i.serialize for i in q]
