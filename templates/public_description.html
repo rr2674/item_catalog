@@ -1,0 +1,21 @@
+{% extends "main.html" %}
+{% block content %}
+
+<div class="row">
+  <div class="col-md-1"></div>
+  <div class="col-md-10">
+      <h3>{{item.name}}</h3>
+      <p>Descritpion: {{item.description}}</p>
+  </div>
+  <div class="col-md-1"></div>
+</div>
+
+<div class="row">
+  <div class="col-md-5"></div>
+  <div class="col-md-2">
+      <a href="{{url_for('showCategoryItems', category_id = item.category_id)}}">Done</a>
+  </div>
+  <div class="col-md-5"></div>
+</div>
+
+{% endblock %}

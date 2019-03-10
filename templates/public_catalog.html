@@ -5,7 +5,7 @@
     <h4>Categories</h4>
     {% for category in categories %}
     <div class="row">
-      <a href = "##">
+      <a href = "{{url_for('showCategoryItems', category_id = category.id)}}">
       <div class="row">
         <div class="col-md-1"></div>
         <!-- TODO: define category-list -->
@@ -18,12 +18,12 @@
     </div>
     {% endfor %}
   </div>
-  
+
   <div class="col-xs-6">
     <h4>Latest Items</h4>
     {% for item in items %}
     <div class="row">
-     <a href = "##">
+     <a href = "{{url_for('showCategoryItemDescription', category_id = item.category_id, item_id = item.id)}}">
        <div class="row">
          <div class="col-md-1"></div>
  			  <div class="col-md-10 restaurant-list">

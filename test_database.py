@@ -37,8 +37,8 @@ user2 = q.id
 
 
 categories_tuples = [
- ('Soccer', [('Shinguards', 'blahblah1', user1), ('Cleats', 'blahblahb2', user2), ('Ball', 'foofoo', user1)]),
- ('Basketball', [('Headband', 'blahblah3', user1), ('Shoes', 'blahblah4', user1), ('Ball', 'blahblah5', user2)]),
+ ('Soccer', [('Shinguards', 'blahblah1', user1), ('Cleats', 'blahblahb2', user2), ('Soccer Ball', 'foofoo', user1)]),
+ ('Basketball', [('Headband', 'blahblah3', user1), ('Basketball Shoes', 'blahblah4', user1), ('Basketball', 'blahblah5', user2)]),
  #('Baseball', ['Bat', 'Glove', 'Ball']),
  #('Football', ['Helmet', 'Jersey', 'Shoulder Pads'])
 ]
@@ -60,3 +60,13 @@ print [i.serialize for i in q]
 
 q = session.query(Item).order_by(asc(Item.name))
 print [i.serialize for i in q]
+
+q = session.query(Category).filter_by(id=1).one()
+print 'category 1: {}'.format(q.name)
+
+category_id = 10
+try:
+    q = session.query(Category).filter_by(id=category_id).one()
+    print 'category 10: {}'.format(q.name)
+except:
+    print 'catetegory id: {} does not exist'.format(category_id)
