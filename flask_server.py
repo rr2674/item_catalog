@@ -37,15 +37,31 @@ db = SQLAlchemy(app)
 @app.route('/')
 @app.route('/catalog')
 def showCatalog():
-    #items = session.query(Item).order_by(asc(Item.name)).all()
+    # TODO: the queries should be moved under if statement...
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
-    items = db.session.query(Item).order_by(asc(Item.name)).all()
-
+    items = db.session.query(Item).order_by(asc(Item.create_date)).limit(5).all()
     if 'username' not in login_session:
         return render_template('public_catalog.html', categories=categories, items=items)
     return "This page will allow users to add, edit or delete their own entries."
     #return render_template('restaurants.html', restaurants=restaurants)
 
+@app.route('/catalog/<int:category_id>/items')
+def showCategoryItems():
+    categories = db.session.query(Category).order_by(asc(Category.name)).all()
+    if 'username' not in login_session:
+        try:
+            category = db.session.query(Category).filter_by(id=category_id).one()
+            items = db.session.query(Item).filter_by(Item.category_id).all()
+        except:
+            flash('Category ID: {} does not exist'.format(category_id))
+
+        return render_template('public_catalog_item.html',
+                                category_name=category.name,
+                                categories=categories, 
+                                items=items)
+
+    return "This page will allow users to add, edit or delete their own entries."
+    #return render_template('restaurants.html', restaurants=restaurants)
 
 @app.route('/login')
 def showLogin():

@@ -6,9 +6,46 @@
 		<link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
 	</head>
 	<body>
+		
+!<!-- TODO: rename top-menu -->
+		<div class="row top-menu">
+	    <div class="col-md-1"></div>
+	    <div class="col-md-3">
+	      <h2>Catalog App</h2>
+	    </div>
+			<div class="col-md-5"></div>
+			<div class="col-md-3 text-right">
+				<a href="{{url_for('showLogin')}}">Click Here to Log in</a>
+			</div>
+		</div>
+
+		<div class="row divider blue">
+		  <div class="col-md-12"></div>
+		</div>
+
+		<div class = 'flash'>
+			{% with messages = get_flashed_messages() %}
+	      {% if messages %}
+	        <ul>
+	        {% for message in messages %}
+	          <li> <strong> {{ message }} </strong> </li>
+	        {% endfor %}
+	        </ul>
+	      {% endif %}
+	    {% endwith %}
+	  </div>
+
+		<div class="row padding-top padding-bottom">
+			<div class="col-md-1"></div>
+			<div class="col-md-10 padding-none"></div>
+			<div class="col-md-1"></div>
+		</div>
+
+<!-- TODO: maybe move the above into "container" -->
 		<div class="container">
 			{% block content %}
 			{% endblock %}
 		</div>
+
 	</body>
 </html>
