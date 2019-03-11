@@ -64,6 +64,13 @@ print [i.serialize for i in q]
 q = session.query(Category).filter_by(id=1).one()
 print 'category 1: {}'.format(q.name)
 
+category_name = 'Soccer'
+q = session.query(Category).filter_by(name=category_name).one()
+print 'category {}: id {}'.format(q.name, q.id)
+
+q = session.query(Item).filter_by(category_id=q.id).all()
+print ' Items for category {}: {}'.format(category_name, [i.serialize for i in q])
+
 category_id = 10
 try:
     q = session.query(Category).filter_by(id=category_id).one()
