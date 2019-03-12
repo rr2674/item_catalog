@@ -36,6 +36,9 @@ def isLoggedIn():
 
     return True
 
+def getUserInfo(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
 
 # TODO: remove me...
 @app.route('/admin/login/<username>')
@@ -51,6 +54,10 @@ def setUsername(username):
         print ('==> added user: {}'.format(username))
         db.session.commit()
 
+        q = db.session.query(User).filter_by(username=username).one()
+
+    login_session['user_id'] = q.id
+
     return redirect(url_for('showCatalog'))
 
 
@@ -58,20 +65,26 @@ def setUsername(username):
 def delUsername():
     if 'username' in login_session:
        del login_session['username']
+       del login_session['user_id']
+    else:
+       print ("wierd...no session yet  'add' was there?")   
     return redirect(url_for('showCatalog'))
 
 
 @app.route('/')
 @app.route('/catalog')
 def showCatalog():
-    # TODO: the queries should be moved under if statement...
-    categories = db.session.query(Category).order_by(desc(Category.name)).all()
-    items = db.session.query(Item).order_by(asc(Item.create_date)).limit(5).all()
+    categories = db.session.query(Category).order_by(asc(Category.name)).all()
+    items = db.session.query(Item).order_by(desc(Item.create_date)).limit(5).all()
+
     if 'username' not in login_session:
         if not categories or not items:
             flash('We need data! Please sign in to add data...')
 
         return render_template('public_catalog.html', categories=categories, items=items)
+
+#    creator = getUserInfo(items.user_id)
+#   if  creator.id != login_session['user_id']:
 
     return render_template('catalog.html', categories=categories, items=items)
 
@@ -91,7 +104,7 @@ def newCategory():
         db.session.commit()
         return redirect(url_for('showCatalog'))
     else:
-        return render_template('new_catalog.html')
+        return render_template('new_catalog.html', action='New Item')
 
 
 @app.route('/catalog/item/new', methods=['GET', 'POST'])
@@ -111,7 +124,7 @@ def newItem():
         return redirect(url_for('showCatalog'))
     else:
         categories = db.session.query(Category).order_by(asc(Category.name)).all()
-        return render_template('new_item.html', categories=categories)
+        return render_template('new_item.html', action='New Item', categories=categories)
 
 
 # TODO: change to use category.name vs id...
