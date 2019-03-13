@@ -37,7 +37,7 @@ def isLoggedIn():
     return True
 
 def getUserInfo(user_id):
-    user = session.query(User).filter_by(id=user_id).one()
+    user = db.session.query(User).filter_by(id=user_id).one()
     return user
 
 # TODO: remove me...
@@ -67,7 +67,8 @@ def delUsername():
        del login_session['username']
        del login_session['user_id']
     else:
-       print ("wierd...no session yet  'add' was there?")   
+       print ("wierd...no session yet  'add' was there?")
+
     return redirect(url_for('showCatalog'))
 
 
@@ -117,14 +118,14 @@ def newItem():
         newItem = Item(name=request.form['name'],
                        description=request.form['description'],
                        category_id=request.form['category_id'],
-                       user_id=login_session['username'])
+                       user_id=login_session['user_id'])
         db.session.add(newItem)
         flash('New item "{}" successfully created'.format(newItem.name))
         db.session.commit()
         return redirect(url_for('showCatalog'))
-    else:
-        categories = db.session.query(Category).order_by(asc(Category.name)).all()
-        return render_template('new_item.html', action='New Item', categories=categories)
+
+    categories = db.session.query(Category).order_by(asc(Category.name)).all()
+    return render_template('new_item.html', action='New Item', categories=categories)
 
 
 # TODO: change to use category.name vs id...
@@ -155,25 +156,26 @@ def showCategoryItems(category_name):
 
 @app.route('/catalog/<category_name>/items/<item_name>')
 def showCategoryItemDescription(category_name, item_name):
-    if 'username' not in login_session:
-        category = None
-        items = None
-        try:
-            category = db.session.query(Category).filter_by(name=category_name).one()
-            item = db.session.query(Item).filter_by(name=item_name).one()
-        except:
-            if category is None:
-                flash('Category "{}" does not exist'.format(category_name))
-            else:
-                flash('Item "{}" for cagegory {} does not exist'.format(item_name, category.name))
+    category = None
+    items = None
+    try:
+        category = db.session.query(Category).filter_by(name=category_name).one()
+        item = db.session.query(Item).filter_by(name=item_name).one()
 
-            return redirect(url_for('showCatalog'))
+    except:
+        if category is None:
+            flash('Category "{}" does not exist'.format(category_name))
+        else:
+            flash('Item "{}" for cagegory {} does not exist'.format(item_name, category.name))
+        return redirect(url_for('showCatalog'))
 
+    creator = getUserInfo(item.user_id)
+    if 'username' not in login_session or creator.id != login_session['user_id']:
         return render_template('public_description.html',
                                 item=item)
 
-    return "This page will allow users to add, edit or delete their own items to a category."
-
+    categories = db.session.query(Category).order_by(asc(Category.name)).all()
+    return render_template('new_item.html', action='Edit Item', item=item, categories=categories)
 
 
 @app.route('/login')
