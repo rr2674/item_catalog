@@ -107,7 +107,6 @@ def newCategory():
     else:
         return render_template('new_catalog.html', action='New Item')
 
-
 @app.route('/catalog/item/new', methods=['GET', 'POST'])
 def newItem():
 
@@ -125,10 +124,37 @@ def newItem():
         return redirect(url_for('showCatalog'))
 
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
-    return render_template('new_item.html', action='New Item', categories=categories)
+    return render_template('add_edit_item.html', action='New Item', categories=categories)
+
+@app.route('/catalog/<category_name>/items/<item_name>/edit', methods=['GET', 'POST'])
+def editItem(category_name, item_name):
+
+    if not isLoggedIn():
+        return redirect('/login')
+
+    item = db.session.query(Item).filter_by(name=item_name).one()
+    if request.method == 'POST':
+        if request.form['name']:
+            item.name = request.form['name']
+        if request.form['description']:
+            itemtem.description = request.form['description']
+        if request.form['category_id']:
+            item.category_id = request.form['category_id']
+        db.session.add(item)
+        db.session.commit()
+        flash('Item Successfully Edited')
+        return redirect(url_for('showCatalog'))
+
+    categories = db.session.query(Category).order_by(asc(Category.name)).all()
+    return render_template('add_edit_item.html', action='Edit Item', item=item, categories=categories)
 
 
-# TODO: change to use category.name vs id...
+@app.route('/catalog/<category_name>/items/<item_name>/delete', methods=['GET', 'POST'])
+def deleteItem(category_name, item_name):
+    print ("delete...")
+    return redirect(url_for('showCatalog'))
+
+
 @app.route('/catalog/<category_name>/items')
 def showCategoryItems(category_name):
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
@@ -170,12 +196,13 @@ def showCategoryItemDescription(category_name, item_name):
         return redirect(url_for('showCatalog'))
 
     creator = getUserInfo(item.user_id)
+    # TODO: replae login_session with  isLoggedIn()...
     if 'username' not in login_session or creator.id != login_session['user_id']:
         return render_template('public_description.html',
                                 item=item)
 
-    categories = db.session.query(Category).order_by(asc(Category.name)).all()
-    return render_template('new_item.html', action='Edit Item', item=item, categories=categories)
+    return render_template('description.html', item=item)
+
 
 
 @app.route('/login')
