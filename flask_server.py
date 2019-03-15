@@ -1,6 +1,7 @@
 
 # todo: model css from OAuth2.0 project
 # todo: https://getbootstrap.com/docs/4.0/layout/grid/#grid-options
+# todo: do not let empty items into database...
 
 from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
 from flask import session as login_session
@@ -93,7 +94,8 @@ def showCatalog():
 @app.route('/catalog/category/new', methods=['GET', 'POST'])
 def newCategory():
 
-    if 'username' not in login_session:
+#    if 'username' not in login_session:
+    if not isLoggedIn():
         return redirect('/login')
 
     if request.method == 'POST':
@@ -151,34 +153,48 @@ def editItem(category_name, item_name):
 
 @app.route('/catalog/<category_name>/items/<item_name>/delete', methods=['GET', 'POST'])
 def deleteItem(category_name, item_name):
-    print ("delete...")
-    return redirect(url_for('showCatalog'))
+    if not isLoggedIn():
+        return redirect('/login')
+
+    item = db.session.query(Item).filter_by(name=item_name).one()
+
+    if request.method == 'POST':
+        db.session.delete(item)
+        db.session.commit()
+        flash('Item Successfully Deleted')
+        return redirect(url_for('showCatalog'))
+
+    return render_template('delete_item.html', item=item)
 
 
 @app.route('/catalog/<category_name>/items')
 def showCategoryItems(category_name):
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
-    if 'username' not in login_session:
-        category = None
-        items = None
-        try:
-            category = db.session.query(Category).filter_by(name=category_name).one()
-            items = db.session.query(Item).filter_by(category_id=category.id).all()
-        except:
-            if category is None:
-                flash('Category "{}" does not exist'.format(category_name))
-            else:
-                flash('No Items for Cagegory "{}" exist'.format(category.name))
 
-            return redirect(url_for('showCatalog'))
+    category = None
+    items = None
+    try:
+        category = db.session.query(Category).filter_by(name=category_name).one()
+        items = db.session.query(Item).filter_by(category_id=category.id).all()
+    except:
+        if category is None:
+            flash('Category "{}" does not exist'.format(category_name))
+        else:
+            flash('No Items for Cagegory "{}" exist'.format(category.name))
 
+        return redirect(url_for('showCatalog'))
+
+    #if 'username' not in login_session:
+    if not isLoggedIn():
         return render_template('public_items.html',
                                 category_name=category.name,
                                 categories=categories,
                                 items=items)
 
-    return "This page will allow users to add, edit or delete their own items to a category."
-    #return render_template('restaurants.html', restaurants=restaurants)
+    return render_template('items.html',
+                            category_name=category.name,
+                            categories=categories,
+                            items=items)
 
 @app.route('/catalog/<category_name>/items/<item_name>')
 def showCategoryItemDescription(category_name, item_name):
@@ -213,6 +229,10 @@ def showLogin():
     #return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
 
+@app.route('/catalog/JSON')
+def catalogJSON():
+    items = db.session.query(Item).all()
+    return jsonify(category=[i.serialize for i in items])
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
