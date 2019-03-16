@@ -11,16 +11,16 @@
 				<div class="form-group">
 					<label for="name">Name:</label>
           {% if item is not defined %}
-					<input type ="text" maxlength="50" class="form-control" name="name" placeholder="Name of the item">
+					<input type ="text" maxlength="50" class="form-control" name="name" placeholder="Name of the item" required>
           {% else %}
-          <input type ="text" maxlength="50" class="form-control" name="name" value="{{item.name}}">
+          <input type ="text" maxlength="50" class="form-control" name="name" value="{{item.name}}" required>
           {% endif %}
 
 					<label for="description">Description:</label>
           {% if item is not defined %}
-					<textarea class="form-control" maxlength="250" rows="3" name="description" placeholder="Description of the item"></textarea>
+					<textarea class="form-control" maxlength="250" rows="3" name="description" placeholder="Description of the item" required></textarea>
           {% else %}
-          <textarea class="form-control" maxlength="250" rows="3" name="description" value="{{item.description}}"></textarea>
+          <textarea class="form-control" maxlength="250" rows="3" name="description" value="{{item.description}}" required></textarea>
           {% endif %}
 
 					<label for="category_id">Category:</label>

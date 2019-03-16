@@ -1,7 +1,7 @@
 
 # todo: model css from OAuth2.0 project
 # todo: https://getbootstrap.com/docs/4.0/layout/grid/#grid-options
-# todo: do not let empty items into database...
+# todo: rate limit...
 
 from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
 from flask import session as login_session
@@ -25,21 +25,24 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignment4.db'
 db = SQLAlchemy(app)
 
 def isLoggedIn():
-    if 'username' not in login_session:
+    if 'username' not in login_session and 'user_id' not in login_session:
         return False
 
-    try:
-        q = db.session.query(User).filter_by(username=username).one()
-    except:
+    if getUserInfo(login_session['user_id']) is None:
         # TODO: not sure why sqlite gets emptied (tables exist, data is gone)
-        print ('==> WARNING: login_session says we are, but db does not record of this user. Forceing logout')
+        print ('==> WARNING: login_session says we are, but db does not record of this user. Forcing logout')
         return redirect(url_for('showCatalog'))
 
     return True
 
 def getUserInfo(user_id):
-    user = db.session.query(User).filter_by(id=user_id).one()
+    try:
+        user = db.session.query(User).filter_by(id=user_id).one()
+    except:
+        return None
+
     return user
+
 
 # TODO: remove me...
 @app.route('/admin/login/<username>')
@@ -68,6 +71,7 @@ def delUsername():
        del login_session['username']
        del login_session['user_id']
     else:
+        # TODO: clean this up
        print ("wierd...no session yet  'add' was there?")
 
     return redirect(url_for('showCatalog'))
@@ -79,39 +83,33 @@ def showCatalog():
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
     items = db.session.query(Item).order_by(desc(Item.create_date)).limit(5).all()
 
-    if 'username' not in login_session:
+    if not isLoggedIn():
         if not categories or not items:
             flash('We need data! Please sign in to add data...')
 
         return render_template('public_catalog.html', categories=categories, items=items)
-
-#    creator = getUserInfo(items.user_id)
-#   if  creator.id != login_session['user_id']:
 
     return render_template('catalog.html', categories=categories, items=items)
 
 
 @app.route('/catalog/category/new', methods=['GET', 'POST'])
 def newCategory():
-
-#    if 'username' not in login_session:
     if not isLoggedIn():
         return redirect('/login')
 
     if request.method == 'POST':
         q = db.session.query(User).filter_by(username=login_session['username']).one()
-        newCategory = Category(name=request.form['name'],
-                               user_id=q.id)
+        newCategory = Category(name=request.form['name'], user_id=q.id)
         db.session.add(newCategory)
         flash('New category "{}" successfully created'.format(newCategory.name))
         db.session.commit()
         return redirect(url_for('showCatalog'))
-    else:
-        return render_template('new_catalog.html', action='New Item')
+
+    return render_template('new_catalog.html', action='New Item')
+
 
 @app.route('/catalog/item/new', methods=['GET', 'POST'])
 def newItem():
-
     if not isLoggedIn():
         return redirect('/login')
 
@@ -128,9 +126,9 @@ def newItem():
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
     return render_template('add_edit_item.html', action='New Item', categories=categories)
 
+
 @app.route('/catalog/<category_name>/items/<item_name>/edit', methods=['GET', 'POST'])
 def editItem(category_name, item_name):
-
     if not isLoggedIn():
         return redirect('/login')
 
@@ -139,7 +137,7 @@ def editItem(category_name, item_name):
         if request.form['name']:
             item.name = request.form['name']
         if request.form['description']:
-            itemtem.description = request.form['description']
+            item.description = request.form['description']
         if request.form['category_id']:
             item.category_id = request.form['category_id']
         db.session.add(item)
@@ -184,7 +182,6 @@ def showCategoryItems(category_name):
 
         return redirect(url_for('showCatalog'))
 
-    #if 'username' not in login_session:
     if not isLoggedIn():
         return render_template('public_items.html',
                                 category_name=category.name,
@@ -196,14 +193,13 @@ def showCategoryItems(category_name):
                             categories=categories,
                             items=items)
 
+
 @app.route('/catalog/<category_name>/items/<item_name>')
 def showCategoryItemDescription(category_name, item_name):
     category = None
-    items = None
     try:
         category = db.session.query(Category).filter_by(name=category_name).one()
         item = db.session.query(Item).filter_by(name=item_name).one()
-
     except:
         if category is None:
             flash('Category "{}" does not exist'.format(category_name))
@@ -212,13 +208,10 @@ def showCategoryItemDescription(category_name, item_name):
         return redirect(url_for('showCatalog'))
 
     creator = getUserInfo(item.user_id)
-    # TODO: replae login_session with  isLoggedIn()...
-    if 'username' not in login_session or creator.id != login_session['user_id']:
-        return render_template('public_description.html',
-                                item=item)
+    if not isLoggedIn() or creator.id != login_session['user_id']:
+            return render_template('public_description.html', item=item)
 
     return render_template('description.html', item=item)
-
 
 
 @app.route('/login')
