@@ -231,8 +231,9 @@ def showLogin():
 
 @app.route('/catalog/JSON')
 def catalogJSON():
-    items = db.session.query(Item).all()
-    return jsonify(category=[i.serialize for i in items])
+    categories = db.session.query(Category).all()
+    print [c.serialize for c in categories]
+    return jsonify(categories=[c.serialize for c in categories])
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'

@@ -49,7 +49,27 @@ class Category(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship(User)
+    user = relationship('User')
+    items = relationship('Item', back_populates='category')
+
+    @property
+    def serialize(self):
+        items = []
+        for item in self.items:
+            items.append(
+                {
+                    'name': item.name,
+                    'id': item.id,
+                    'description': item.description,
+                    'created': item.create_date.strftime('%Y-%m-%d %H:%M'),
+                    'category_id': item.category_id
+                }
+            )
+        return {
+            'id': self.id,
+            'name': self.name,
+            'items': items
+        }
 
 
 class Item(Base):
@@ -60,9 +80,9 @@ class Item(Base):
     description = Column(String(250))
     create_date = Column(DateTime, default=datetime.utcnow)
     category_id = Column(Integer, ForeignKey('category.id'))
-    category = relationship(Category)
+    category = relationship('Category')
     user_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship(User)
+    user = relationship('User')
 
 
 # serialize function to be able to send JSON objects in a
