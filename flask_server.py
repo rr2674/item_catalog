@@ -20,17 +20,60 @@ import requests
 
 from database_setup import Base, Category, Item, User
 
+#http://flask.pocoo.org/docs/1.0/tutorial/database/
+#import sqlite3
+
+#import click
+#from flask import current_app, g
+#from flask.cli import with_appcontext
+
+#def get_db():
+#    print ("in get_db")
+#    if 'db' not in g:
+#        print ("no db...")
+#
+#    return g.db
+
+
+#def close_db(e=None):
+#    print ("in close_db")
+#    db = g.pop('db', None)
+#
+#    if db is not None:
+#        db.close()
+
+#def create_app():
+#    print ("in create_app")
+#    app = Flask(__name__)
+#    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignment4.db'
+#    g.db = SQLAlchemy(app)
+
+#    return app
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignment4.db'
 db = SQLAlchemy(app)
+
+@app.before_request
+def cleanup():
+    """
+    https://stackoverflow.com/questions/11783025/is-there-an-easy-way-to-make-sessions-timeout-in-flask
+    """
+
+    if 'username' in login_session and 'user_id' in login_session:
+        if getUserInfo(login_session['user_id']) is None:
+            print ('==> INFO: clean up session for stale browser conection')
+            del login_session['username']
+            del login_session['user_id']
 
 def isLoggedIn():
     if 'username' not in login_session and 'user_id' not in login_session:
         return False
 
+    # TODO: this block of code should get deleted...
     if getUserInfo(login_session['user_id']) is None:
         # TODO: not sure why sqlite gets emptied (tables exist, data is gone)
-        print ('==> WARNING: login_session says we are, but db does not record of this user. Forcing logout')
+        print ('==> CLEANUP????')
         return redirect(url_for('showCatalog'))
 
     return True
@@ -228,7 +271,27 @@ def catalogJSON():
     print [c.serialize for c in categories]
     return jsonify(categories=[c.serialize for c in categories])
 
+
+def load_category_table():
+    categories = [ 'Soccer',
+                   'Basketball',
+                   'Baseball',
+                   'Frisbee',
+                   'Snowboarding',
+                   'Rock Climbing',
+                   'Football',
+                   'Skating',
+                   'Hockey'
+                  ]
+    for category in categories:
+        db.session.add(Category(name=category))
+        db.session.commit()
+
+
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
+    #app.secret_key = "'\x7f\x90TW3#\xe8X\xcc\xd9VNb\xba\x91"
     app.debug = True
+    print('=!' * 40)
+    load_category_table()
     app.run(host='0.0.0.0', port=8000)

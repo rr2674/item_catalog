@@ -61,6 +61,9 @@ print [i.serialize for i in q]
 q = session.query(Item).order_by(asc(Item.name))
 print [i.serialize for i in q]
 
+q = session.query(Category).all()
+print [i.serialize for i in q]
+
 q = session.query(Category).filter_by(id=1).one()
 print 'category 1: {}'.format(q.name)
 
