@@ -81,64 +81,95 @@ a {
 	color: red;
 }
 
-/* TODO: this can be deleted? */
+.btn.cancel {
+	border-color: #aaaaaa;
+	color: #aaaaaa;
+}
+
+.btn.cancel:hover {
+	border-color: #aaaaaa;
+	color: red;
+}
+
 .glyphicon {
 	margin-right: 10px;
 }
 
-/* TODO:
-.top-menu {
+.top-main {
 	padding-top: 30px;
 	padding-bottom: 30px;
 }
 
-.top-menu p {
+.top-main p {
 	margin-bottom: 0;
 	line-height: 16px;
 }
-.top-menu a {
+
+.top-main a {
 	margin-bottom: 0;
 	line-height: 16px;
 	font-size: 16px;
 	color: #7B7573;
 	font-weight: 400;
 }
-*/
 
 .divider {
 	height: 15px;
 }
-.divider.blue {
-	background-color: #42C3C9;
-}
-.divider.green {
-	background-color: #9FB80A;
+
+.divider.brown {
+	background-color: #996600
 }
 
-/* TODO:
+.banner.profile {
+	height: 150px;
+	background-color: #A6E8EB;
+}
+
+.banner h1 {
+	margin: 45px 0;
+	font-weight: bolder;
+	font-family:Arial Black;
+}
+
 .banner.main {
 	height: 150px;
-	background: url("/static/top-banner.jpg");
+	background: url("/static/erol-ahmed-460277-unsplash.jpg");
 	background-position: right;
 	background-repeat: no-repeat;
 	background-size: cover;
 }
 
+.category-list {
+ background-color: #F0F0F0;
+ padding: 20px;
+ /* TODO:
+ outline-style: solid;
+ outline-color: #996600 */
+}
+
+.category-list:hover {
+ background-color: #ffd9b3;
+ padding: 20px;
+}
+
+.item-list {
+ background-color: #F0F0F0;
+ padding: 20px;
+}
+
+/* TODO:
+
 .banner.menu {
 	height: 150px;
 	background-color: #E1E17F;
 }
-.banner.profile {
-	height: 150px;
-	background-color: #A6E8EB;
-}
-.banner h1 {
-	margin: 45px 0;
-}
+
  .restaurant-list {
  	background-color: #F0F0F0;
  	padding: 20px;
-u }
+}
+
  .restaurant-list:hover {
  	background-color: #e1e17f;
  	padding: 20px;
@@ -174,7 +205,7 @@ u }
 }
 
 .flash {
-	background-color: #98FB98;
+	background-color: #ffd9b3;
 	width:100%;
 	text-decoration: none;
 
