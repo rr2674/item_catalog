@@ -1,7 +1,9 @@
+/* TODO:
 * {
 	font-family: "Helvetica Neue Bold", Roboto, Helvetica, Arial, sans-serif;
 	font-weight: 700;
 }
+*/
 
 h1 {
 	font-family: "Helvetica Neue Light", Roboto, Helvetica, Arial, sans-serif;
@@ -51,9 +53,11 @@ a {
 	padding-bottom: 30px;
 }
 
+/* TODO: delete
 .margin-right {
 	margin-right: 30px;
 }
+*/
 
 .padding-none {
 	padding: 0;
@@ -140,12 +144,10 @@ a {
 	background-size: cover;
 }
 
+/* TODO:
 .category-list {
  background-color: #F0F0F0;
  padding: 20px;
- /* TODO:
- outline-style: solid;
- outline-color: #996600 */
 }
 
 .category-list:hover {
@@ -157,6 +159,8 @@ a {
  background-color: #F0F0F0;
  padding: 20px;
 }
+
+*/
 
 /* TODO:
 

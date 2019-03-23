@@ -15,7 +15,7 @@
          <a href = "{{url_for('showCategoryItems', category_name = category.name)}}">
          <div class="row">
            <div class="col-md-1"></div>
-			     <div class="col-md-6 category-list">
+			     <div class="col-md-6 category-list padding-none">
 					   	<h3>{{category.name}}</h3>
 		       </div>
 				   <div class="col-md-7"></div>
@@ -39,7 +39,7 @@
      <a href = "{{url_for('showCategoryItemDescription', category_name = item.category.name, item_name = item.name)}}">
        <div class="row">
          <div class="col-md-1"></div>
- 			  <div class="col-md-10 item-list">
+ 			  <div class="col-md-10 item-list padding-none">
  						<p>{{item.name}} <i>({{item.category.name}})</i></p>
  		    </div>
  				<div class="col-md-1"></div>
