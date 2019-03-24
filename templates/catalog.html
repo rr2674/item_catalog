@@ -1,53 +1,31 @@
 {% extends "main.html" %}
 {% block content %}
 
-  <div class="col-xs-6">
-    <div class="row">
-      <div class="col-md-1"></div>
-      <div class="col-md-10 padding-none">
+  <div class='w3-sidebar w3-collapse' id='sidenav'>
+    <div id='leftmenuinner'>
+      <div class='w3-light-grey' id='leftmenuinnerinner'>
         <a href="{{url_for('newCategory')}}">Add Category</a>
+        {% for category in categories %}
+          <a href = "{{url_for('showCategoryItems', category_name = category.name)}}">
+					   	<h4>{{category.name}}</h4>
+          </a>
+        {% endfor %}
       </div>
-      <div class="col-md-1"></div>
     </div>
-    <h4>Categories</h4>
-    {% for category in categories %}
-       <div class="row">
-         <a href = "{{url_for('showCategoryItems', category_name = category.name)}}">
-         <div class="row">
-           <div class="col-md-1"></div>
-			     <div class="col-md-6 category-list padding-none">
-					   	<h3>{{category.name}}</h3>
-		       </div>
-				   <div class="col-md-7"></div>
-			   </div>
-         </a>
-       </div>
-    {% endfor %}
   </div>
 
-  <div class="col-xs-6">
-    <div class="row">
-      <div class="col-md-1"></div>
-      <div class="col-md-10 padding-none">
+  <div class='w3-main w3-light-grey' id='belowtopnav' style='margin-left:220px;'>
+    <div class='w3-row w3-white'>
+      <div class='w3-col l10 m12' id='main'>
         <a href="{{url_for('newItem')}}">Add Item</a>
+        <h4>Latest Items</h4>
+        {% for item in items %}
+          <a href = "{{url_for('showCategoryItemDescription', category_name = item.category.name, item_name = item.name)}}">
+    				 <p>{{item.name}} <i>({{item.category.name}})</i></p>
+          </a>
+        {% endfor %}
       </div>
-      <div class="col-md-1"></div>
     </div>
-    <h4>Latest Items</h4>
-    {% for item in items %}
-    <div class="row">
-     <a href = "{{url_for('showCategoryItemDescription', category_name = item.category.name, item_name = item.name)}}">
-       <div class="row">
-         <div class="col-md-1"></div>
- 			  <div class="col-md-10 item-list padding-none">
- 						<p>{{item.name}} <i>({{item.category.name}})</i></p>
- 		    </div>
- 				<div class="col-md-1"></div>
- 			</div>
-     </a>
-    </div>
-    {% endfor %}
   </div>
-
 
 {% endblock %}
