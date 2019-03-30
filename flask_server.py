@@ -1,9 +1,6 @@
-
-# todo: model css from OAuth2.0 project
-# todo: https://getbootstrap.com/docs/4.0/layout/grid/#grid-options
 # todo: rate limit...
 
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import Flask, render_template, request, redirect, jsonify, url_for, flash, g
 from flask import session as login_session
 from flask import make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -13,9 +10,11 @@ import random
 import string
 import json
 
-from oauth2client.client import flow_from_clientsecrets
-from oauth2client.client import FlowExchangeError
-#import httplib2
+#from oauth2client.client import flow_from_clientsecrets
+#from oauth2client.client import FlowExchangeError
+from google.oauth2 import id_token
+from google.auth.transport import requests as g_requests
+import httplib2
 import requests
 
 from database_setup import Base, Category, Item, User
@@ -50,8 +49,19 @@ from database_setup import Base, Category, Item, User
 
 #    return app
 
+
+
+
+def load_3rd_party_client_ids():
+  g.google_client_id = json.loads(
+      open('client_secret_754504885007-15mr1cbmkral5b8tbalpqcnsf1pibt84.apps.googleusercontent.com.json',
+           'r').read())['web']['client_id']
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignment4.db'
+with app.app_context():
+    load_3rd_party_client_ids()
+
 db = SQLAlchemy(app)
 
 @app.before_request
@@ -59,9 +69,8 @@ def cleanup():
     """
     https://stackoverflow.com/questions/11783025/is-there-an-easy-way-to-make-sessions-timeout-in-flask
     """
-
     if 'username' in login_session and 'user_id' in login_session:
-        if getUserInfo(login_session['user_id']) is None:
+        if getUserId(login_session['user_id']) is None:
             print ('==> INFO: clean up session for stale browser conection')
             del login_session['username']
             del login_session['user_id']
@@ -71,14 +80,15 @@ def isLoggedIn():
         return False
 
     # TODO: this block of code should get deleted...
-    if getUserInfo(login_session['user_id']) is None:
+    if getUserId(login_session['user_id']) is None:
         # TODO: not sure why sqlite gets emptied (tables exist, data is gone)
         print ('==> CLEANUP????')
         return redirect(url_for('showCatalog'))
 
     return True
 
-def getUserInfo(user_id):
+
+def getUserId(user_id):
     try:
         user = db.session.query(User).filter_by(id=user_id).one()
     except:
@@ -87,37 +97,53 @@ def getUserInfo(user_id):
     return user
 
 
-# TODO: remove me...
-@app.route('/admin/login/<username>')
-def setUsername(username):
-    login_session['username'] = username
-
+def getUserIdByEmail(email):
     try:
-        q = db.session.query(User).filter_by(username=username).one()
-    except:
-        db.session.add(User(username = username,
-                            picture = '',
-                            email = '{}.@whatever.com'.format(username)))
-        print ('==> added user: {}'.format(username))
-        db.session.commit()
+        user = db.session.query(User).filter_by(email=email).one()
+    except Exception as e:
+        print('ERROR: getuseridbyemail exception: {}'.format(e))
+        return None
 
-        q = db.session.query(User).filter_by(username=username).one()
+    print ('user_id: {}'.format(user.id))
+    return user.id
 
-    login_session['user_id'] = q.id
+def createUser(**kwargs):
+    print ('name: {}, pic: {}, email: {}'.format(kwargs['name'], kwargs['picture'], kwargs['email']))
+    db.session.add(User(username = kwargs['name'],
+                        picture = kwargs['picture'],
+                        email = kwargs['email']))
+    db.session.commit()
 
-    return redirect(url_for('showCatalog'))
+    return getUserIdByEmail(kwargs['email'])
 
 
-@app.route('/admin/logout')
-def delUsername():
-    if 'username' in login_session:
-       del login_session['username']
-       del login_session['user_id']
-    else:
-        # TODO: clean this up
-       print ("wierd...no session yet  'add' was there?")
-
-    return redirect(url_for('showCatalog'))
+# @app.route('/admin/login/<username>')
+# def setUsername(username):
+#     login_session['username'] = username
+#
+#     try:
+#         q = db.session.query(User).filter_by(username=username).one()
+#     except:
+#         db.session.add(User(username = username,
+#                             picture = '',
+#                             email = '{}.@whatever.com'.format(username)))
+#         print ('==> added user: {}'.format(username))
+#         db.session.commit()
+#
+#         q = db.session.query(User).filter_by(username=username).one()
+#
+#     login_session['user_id'] = q.id
+#
+#     return redirect(url_for('showCatalog'))
+#
+#
+# @app.route('/admin/logout')
+# def delUsername():
+#     if 'username' in login_session:
+#        del login_session['username']
+#        del login_session['user_id']
+#
+#     return redirect(url_for('showCatalog'))
 
 
 @app.route('/')
@@ -250,7 +276,7 @@ def showCategoryItemDescription(category_name, item_name):
             flash('Item "{}" for cagegory {} does not exist'.format(item_name, category.name))
         return redirect(url_for('showCatalog'))
 
-    creator = getUserInfo(item.user_id)
+    creator = getUserId(item.user_id)
     if not isLoggedIn() or creator.id != login_session['user_id']:
             return render_template('public_description.html', item=item)
 
@@ -262,8 +288,115 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    #return "The current session state is %s" % login_session['state']
+    print ('state: ' + state)
     return render_template('login.html', STATE=state)
+
+
+@app.route('/gconnect', methods=['POST'])
+def gconnect():
+    """
+    secret_key: Aefs5Gqduh_XCabMcMKMTeZC
+    """
+    print('{} state: {}'.format('!' * 8, request.args.get('state')))
+    print('{} state: {}'.format('=' * 8, login_session['state']))
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    token = request.data
+    print('{} id_token: {}'.format('*' * 8, token))
+
+    # ok here
+    # response = make_response(json.dumps('Testing.'), 200)
+    # response.headers['Content-Type'] = 'application/json'
+    # return response
+
+    try:
+        idinfo = id_token.verify_oauth2_token(token, g_requests.Request(),
+                     "754504885007-bo60atmvpejrjn4ibag2ods6c7kiem18.apps.googleusercontent.com")
+
+        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            response = make_response(json.dumps('Wrong issuer.'), 401)
+            response.headers['Content-Type'] = 'application/json'
+            return response
+    except ValueError as e:
+        response = make_response(json.dumps('oauth_token error: {}'.format(e)), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # ok here too
+    # response = make_response(json.dumps('Testing.'), 200)
+    # response.headers['Content-Type'] = 'application/json'
+    # return response
+
+    #print ('{} id_info: {}'.format('+' * 8, idinfo))
+    print ('{} name: {}'.format('+' * 8, idinfo['name']))
+    print ('{} email: {}'.format('+' * 8, idinfo['email']))
+
+    login_session['username'] = idinfo['name']
+    #login_session['picture'] = idinfo['picture']
+    #login_session['email'] = idinfo['email']
+    login_session['provider'] = 'google'
+
+    print ('does user exist?')
+    user_id = getUserIdByEmail(idinfo['email'])
+    if not user_id:
+        user_id = createUser( name=idinfo['name'], picture=idinfo['picture'], email=idinfo['email'])
+    login_session['user_id'] = user_id
+
+    #print ('flash...')
+    #flash('Successfully logged in...')
+
+    #print ('redirect...')
+    #return redirect(url_for('showCatalog'))
+
+    # output = ''
+    # output += '<h1>Welcome, '
+    # output += login_session['username']
+    # output += '!</h1>'
+    # output += '<img src="'
+    # output += login_session['picture']
+    # output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+
+    #response = make_response(json.dumps('Successfully connected.'), 200)
+    #response.headers['Content-Type'] = 'application/json'
+    response = make_response(json.dumps('Testing.'), 200)
+    response.headers['Content-Type'] = 'application/json'
+    print('all done?')
+    return response
+
+@app.route('/gdisconnect')
+def gdisconnect():
+    """
+     Revoke a current user's token and reset their login_session
+    """
+    access_token = login_session.get('access_token')
+    if access_token is None:
+        print 'Access Token is None'
+        response = make_response(json.dumps('Current user not connected.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    print 'In gdisconnect access token is %s', access_token
+    print 'User name is: '
+    print login_session['username']
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[0]
+    print 'result is '
+    print result
+    if result['status'] == '200':
+        del login_session['access_token']
+        del login_session['gplus_id']
+        del login_session['username']
+        del login_session['email']
+        del login_session['picture']
+        response = make_response(json.dumps('Successfully disconnected.'), 200)
+    else:
+        response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+
+    response.headers['Content-Type'] = 'application/json'
+    return response
 
 @app.route('/catalog/JSON')
 def catalogJSON():
@@ -273,6 +406,9 @@ def catalogJSON():
 
 
 def load_category_table():
+    """
+    Pre-populate category table with the following list.
+    """
     categories = [ 'Soccer',
                    'Basketball',
                    'Baseball',
@@ -286,7 +422,6 @@ def load_category_table():
     for category in categories:
         db.session.add(Category(name=category))
         db.session.commit()
-
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'

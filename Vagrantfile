@@ -27,12 +27,18 @@ Vagrant.configure("2") do |config|
     pip3 install flask packaging oauth2client redis passlib flask-httpauth
     pip3 install sqlalchemy flask-sqlalchemy psycopg2-binary bleach requests
     #pip3 install sqlalchemy-utils
+    #pip3 install --upgrade google.oauth2  google.auth.transport
+    pip3 install --upgrade google-auth 
+    #pip3 install --upgrade google.auth.transport
+
 
     apt-get -qqy install python python-pip
     pip2 install --upgrade pip
     pip2 install flask packaging oauth2client redis passlib flask-httpauth
     pip2 install sqlalchemy flask-sqlalchemy psycopg2-binary bleach requests
     #pip2 install sqlalchemy-utils
+    pip2 install --upgrade google-auth 
+    #pip2 install --upgrade google.auth.transport
 
     # maybe we can use pgsql...
     #su postgres -c 'createuser -dRS vagrant'
