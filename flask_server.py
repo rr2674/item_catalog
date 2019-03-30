@@ -1,5 +1,4 @@
 # todo: rate limit...
-
 from flask import Flask, render_template, request, redirect, jsonify, url_for, flash, g
 from flask import session as login_session
 from flask import make_response
@@ -10,8 +9,6 @@ import random
 import string
 import json
 
-#from oauth2client.client import flow_from_clientsecrets
-#from oauth2client.client import FlowExchangeError
 from google.oauth2 import id_token
 from google.auth.transport import requests as g_requests
 import httplib2
@@ -19,50 +16,14 @@ import requests
 
 from database_setup import Base, Category, Item, User
 
-#http://flask.pocoo.org/docs/1.0/tutorial/database/
-#import sqlite3
-
-#import click
-#from flask import current_app, g
-#from flask.cli import with_appcontext
-
-#def get_db():
-#    print ("in get_db")
-#    if 'db' not in g:
-#        print ("no db...")
-#
-#    return g.db
-
-
-#def close_db(e=None):
-#    print ("in close_db")
-#    db = g.pop('db', None)
-#
-#    if db is not None:
-#        db.close()
-
-#def create_app():
-#    print ("in create_app")
-#    app = Flask(__name__)
-#    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignment4.db'
-#    g.db = SQLAlchemy(app)
-
-#    return app
-
-
-
-
-def load_3rd_party_client_ids():
-  g.google_client_id = json.loads(
-      open('client_secret_754504885007-15mr1cbmkral5b8tbalpqcnsf1pibt84.apps.googleusercontent.com.json',
-           'r').read())['web']['client_id']
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignment4.db'
 with app.app_context():
-    load_3rd_party_client_ids()
+    print('=!' * 40)
 
 db = SQLAlchemy(app)
+
 
 @app.before_request
 def cleanup():
@@ -75,13 +36,19 @@ def cleanup():
             del login_session['username']
             del login_session['user_id']
 
+
+def get_google_client_id():
+    return json.loads(
+      open('client_secret_google.json',
+           'r').read())['web']['client_id']
+
+
 def isLoggedIn():
     if 'username' not in login_session and 'user_id' not in login_session:
         return False
 
     # TODO: this block of code should get deleted...
     if getUserId(login_session['user_id']) is None:
-        # TODO: not sure why sqlite gets emptied (tables exist, data is gone)
         print ('==> CLEANUP????')
         return redirect(url_for('showCatalog'))
 
@@ -100,50 +67,19 @@ def getUserId(user_id):
 def getUserIdByEmail(email):
     try:
         user = db.session.query(User).filter_by(email=email).one()
-    except Exception as e:
-        print('ERROR: getuseridbyemail exception: {}'.format(e))
+    except:
         return None
 
-    print ('user_id: {}'.format(user.id))
     return user.id
 
-def createUser(**kwargs):
-    print ('name: {}, pic: {}, email: {}'.format(kwargs['name'], kwargs['picture'], kwargs['email']))
-    db.session.add(User(username = kwargs['name'],
-                        picture = kwargs['picture'],
-                        email = kwargs['email']))
+
+def createUser(login_session):
+    db.session.add(User(username = login_session['username'],
+                        picture = login_session['picture'],
+                        email = login_session['email']))
     db.session.commit()
 
-    return getUserIdByEmail(kwargs['email'])
-
-
-# @app.route('/admin/login/<username>')
-# def setUsername(username):
-#     login_session['username'] = username
-#
-#     try:
-#         q = db.session.query(User).filter_by(username=username).one()
-#     except:
-#         db.session.add(User(username = username,
-#                             picture = '',
-#                             email = '{}.@whatever.com'.format(username)))
-#         print ('==> added user: {}'.format(username))
-#         db.session.commit()
-#
-#         q = db.session.query(User).filter_by(username=username).one()
-#
-#     login_session['user_id'] = q.id
-#
-#     return redirect(url_for('showCatalog'))
-#
-#
-# @app.route('/admin/logout')
-# def delUsername():
-#     if 'username' in login_session:
-#        del login_session['username']
-#        del login_session['user_id']
-#
-#     return redirect(url_for('showCatalog'))
+    return getUserIdByEmail(login_session['email'])
 
 
 @app.route('/')
@@ -156,9 +92,14 @@ def showCatalog():
         if not categories or not items:
             flash('We need data! Please sign in to add data...')
 
-        return render_template('public_catalog.html', categories=categories, items=items)
+        return render_template('public_catalog.html',
+                               categories=categories,
+                               items=items)
 
-    return render_template('catalog.html', categories=categories, items=items)
+    return render_template('catalog.html',
+                           categories=categories,
+                           items=items,
+                           provider=login_session['provider'])
 
 
 @app.route('/catalog/category/new', methods=['GET', 'POST'])
@@ -288,34 +229,26 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    print ('state: ' + state)
-    return render_template('login.html', STATE=state)
+    return render_template('login.html', STATE=state, google_client_id=get_google_client_id())
 
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-    """
-    secret_key: Aefs5Gqduh_XCabMcMKMTeZC
-    """
-    print('{} state: {}'.format('!' * 8, request.args.get('state')))
-    print('{} state: {}'.format('=' * 8, login_session['state']))
+    '''
+    The example provided in OATH2 lessons stopped working for me... it did work
+    few weeks back, I think it may be realted to the shutdown of google+
+    I started @ https://developers.google.com/identity/sign-in/web/quick-migration-guide
+    I then followed the instructions @ https://developers.google.com/identity/sign-in/web/backend-auth
+    '''
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
     token = request.data
-    print('{} id_token: {}'.format('*' * 8, token))
-
-    # ok here
-    # response = make_response(json.dumps('Testing.'), 200)
-    # response.headers['Content-Type'] = 'application/json'
-    # return response
 
     try:
-        idinfo = id_token.verify_oauth2_token(token, g_requests.Request(),
-                     "754504885007-bo60atmvpejrjn4ibag2ods6c7kiem18.apps.googleusercontent.com")
-
+        idinfo = id_token.verify_oauth2_token(token, g_requests.Request(), get_google_client_id())
         if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
             response = make_response(json.dumps('Wrong issuer.'), 401)
             response.headers['Content-Type'] = 'application/json'
@@ -325,83 +258,129 @@ def gconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
-    # ok here too
-    # response = make_response(json.dumps('Testing.'), 200)
-    # response.headers['Content-Type'] = 'application/json'
-    # return response
-
-    #print ('{} id_info: {}'.format('+' * 8, idinfo))
-    print ('{} name: {}'.format('+' * 8, idinfo['name']))
-    print ('{} email: {}'.format('+' * 8, idinfo['email']))
-
     login_session['username'] = idinfo['name']
-    #login_session['picture'] = idinfo['picture']
-    #login_session['email'] = idinfo['email']
+    login_session['email'] = idinfo['email']
+    login_session['picture'] = idinfo['picture']
     login_session['provider'] = 'google'
 
-    print ('does user exist?')
     user_id = getUserIdByEmail(idinfo['email'])
     if not user_id:
-        user_id = createUser( name=idinfo['name'], picture=idinfo['picture'], email=idinfo['email'])
+        user_id = createUser(login_session)
     login_session['user_id'] = user_id
 
-    #print ('flash...')
     #flash('Successfully logged in...')
-
-    #print ('redirect...')
-    #return redirect(url_for('showCatalog'))
-
-    # output = ''
-    # output += '<h1>Welcome, '
-    # output += login_session['username']
-    # output += '!</h1>'
-    # output += '<img src="'
-    # output += login_session['picture']
-    # output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-
-    #response = make_response(json.dumps('Successfully connected.'), 200)
-    #response.headers['Content-Type'] = 'application/json'
-    response = make_response(json.dumps('Testing.'), 200)
+    response = make_response(json.dumps({ 'name': login_session['username']}), 200)
     response.headers['Content-Type'] = 'application/json'
-    print('all done?')
+
     return response
 
-@app.route('/gdisconnect')
-def gdisconnect():
+@app.route('/fbconnect', methods=['POST'])
+def fbconnect():
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    access_token = request.data
+
+    app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
+        'web']['app_id']
+    app_secret = json.loads(
+        open('fb_client_secrets.json', 'r').read())['web']['app_secret']
+    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
+        app_id, app_secret, access_token)
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+
+    # Use token to get user info from API
+    userinfo_url = "https://graph.facebook.com/v2.8/me"
+    '''
+        Due to the formatting for the result from the server token exchange we have to
+        split the token first on commas and select the first index which gives us the key : value
+        for the server access token then we split it on colons to pull out the actual token value
+        and replace the remaining quotes with nothing so that it can be used directly in the graph
+        api calls
+    '''
+    token = result.split(',')[0].split(':')[1].replace('"', '')
+
+    url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+
+    data = json.loads(result)
+    login_session['provider'] = 'facebook'
+    login_session['username'] = data["name"]
+    if 'email' in data:
+        login_session['email'] = data["email"]
+    else:
+        #email not required when you create an id with phone number...
+        login_session['email'] = '{}@no_fb_email_avail'.format(data['name'])
+    login_session['facebook_id'] = data["id"]
+
+    # The token must be stored in the login_session in order to properly logout
+    login_session['access_token'] = token
+
+    # Get user picture
+    url = 'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200' % token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+    data = json.loads(result)
+
+    login_session['picture'] = data["data"]["url"]
+
+    user_id = getUserIdByEmail(login_session['email'])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+
+    response = make_response(json.dumps({ 'name': login_session['username']}), 200)
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
+
+@app.route('/disconnect')
+def disconnect():
     """
      Revoke a current user's token and reset their login_session
     """
-    access_token = login_session.get('access_token')
-    if access_token is None:
-        print 'Access Token is None'
-        response = make_response(json.dumps('Current user not connected.'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-    print 'In gdisconnect access token is %s', access_token
-    print 'User name is: '
-    print login_session['username']
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
-    h = httplib2.Http()
-    result = h.request(url, 'GET')[0]
-    print 'result is '
-    print result
-    if result['status'] == '200':
-        del login_session['access_token']
-        del login_session['gplus_id']
-        del login_session['username']
-        del login_session['email']
-        del login_session['picture']
-        response = make_response(json.dumps('Successfully disconnected.'), 200)
-    else:
-        response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+    provider = login_session.get('provider')
+    if provider is None:
+        flash('You are not logged in...')
+        redirect(url_for('showCatalog'))
 
-    response.headers['Content-Type'] = 'application/json'
-    return response
+
+    flash('{}, you are now logged out from {}'.format(login_session['username'], login_session['provider']))
+    if provider == 'google':
+        #my research suggests id_token is all you need...
+        #  g-signin2 with googleuser.getAuthResponse appears to not expose auth_token
+        #  as a result, I not yet found how to 'revoke' the auth token - or equivellent
+        #  when all I have is id_token...
+        #  note: I think i should be using sub from id_token instead of email
+        pass
+    else:
+        facebook_id = login_session['facebook_id']
+        # The access token must me included to successfully logout
+        access_token = login_session['access_token']
+        url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
+        h = httplib2.Http()
+        result = h.request(url, 'DELETE')[1]
+        print('FB delete acess token result {}'.format(result))
+        del login_session['facebook_id']
+        del login_session['access_token']
+
+    del login_session['picture']
+    del login_session['username']
+    del login_session['email']
+    del login_session['user_id']
+    del login_session['provider']
+
+    return redirect(url_for('showCatalog'))
+
 
 @app.route('/catalog/JSON')
 def catalogJSON():
     categories = db.session.query(Category).all()
-    print [c.serialize for c in categories]
+    #print [c.serialize for c in categories]
     return jsonify(categories=[c.serialize for c in categories])
 
 
@@ -423,10 +402,10 @@ def load_category_table():
         db.session.add(Category(name=category))
         db.session.commit()
 
+
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     #app.secret_key = "'\x7f\x90TW3#\xe8X\xcc\xd9VNb\xba\x91"
     app.debug = True
-    print('=!' * 40)
     load_category_table()
     app.run(host='0.0.0.0', port=8000)
