@@ -7,11 +7,8 @@
     {% endfor %}
   </div>
 
-  <div>
-    <h3>Latest Items</h3>
-  </div>
-
   <div class="tabcontent">
+    <h4>Latest Items</h4>
     {% for item in items %}
       <a href = "{{url_for('showCategoryItemDescription', category_name = item.category.name, item_name = item.name)}}">
         <p>{{item.name}} <i>({{item.category.name}})</i></p>
