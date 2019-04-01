@@ -1,5 +1,11 @@
-# todo: rate limit...
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash, g
+from flask import Flask
+from flask import render_template
+from flask import request
+from flask import redirect
+from flask import jsonify
+from flask import url_for
+from flask import flash
+from flask import g
 from flask import session as login_session
 from flask import make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -74,9 +80,9 @@ def getUserIdByEmail(email):
 
 
 def createUser(login_session):
-    db.session.add(User(username = login_session['username'],
-                        picture = login_session['picture'],
-                        email = login_session['email']))
+    db.session.add(User(username=login_session['username'],
+                        picture=login_session['picture'],
+                        email=login_session['email']))
     db.session.commit()
 
     return getUserIdByEmail(login_session['email'])
@@ -92,12 +98,17 @@ def showCatalog():
         if not categories or not items:
             flash('We need data! Please sign in to add data...')
 
-
         return render_template('public_catalog.html',
                                categories=categories,
                                items=items)
 
-    items = db.session.query(Item).filter_by(user_id=login_session['user_id']).order_by(desc(Item.create_date)).all()
+    items = (
+              db.session.query(Item)
+                        .filter_by(user_id=login_session['user_id'])
+                        .order_by(desc(Item.create_date))
+                        .all()
+            )
+
     return render_template('catalog.html',
                            categories=categories,
                            items=items,
@@ -110,10 +121,17 @@ def newCategory():
         return redirect('/login')
 
     if request.method == 'POST':
-        q = db.session.query(User).filter_by(username=login_session['username']).one()
+        q = (
+             db.session.query(User)
+                       .filter_by(username=login_session['username'])
+                       .one()
+            )
         newCategory = Category(name=request.form['name'], user_id=q.id)
         db.session.add(newCategory)
-        flash('New category "{}" successfully created'.format(newCategory.name))
+
+        flash(
+           'New category "{}" successfully created'.format(newCategory.name)
+        )
         db.session.commit()
         return redirect(url_for('showCatalog'))
 
@@ -136,10 +154,13 @@ def newItem():
         return redirect(url_for('showCatalog'))
 
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
-    return render_template('add_edit_item.html', action='New Item', categories=categories)
+    return render_template('add_edit_item.html',
+                           action='New Item',
+                           categories=categories)
 
 
-@app.route('/catalog/<category_name>/items/<item_name>/edit', methods=['GET', 'POST'])
+@app.route('/catalog/<category_name>/items/<item_name>/edit',
+           methods=['GET', 'POST'])
 def editItem(category_name, item_name):
     if not isLoggedIn():
         return redirect('/login')
@@ -158,10 +179,14 @@ def editItem(category_name, item_name):
         return redirect(url_for('showCatalog'))
 
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
-    return render_template('add_edit_item.html', action='Edit Item', item=item, categories=categories)
+    return render_template('add_edit_item.html',
+                           action='Edit Item',
+                           item=item,
+                           categories=categories)
 
 
-@app.route('/catalog/<category_name>/items/<item_name>/delete', methods=['GET', 'POST'])
+@app.route('/catalog/<category_name>/items/<item_name>/delete',
+           methods=['GET', 'POST'])
 def deleteItem(category_name, item_name):
     if not isLoggedIn():
         return redirect('/login')
@@ -174,7 +199,7 @@ def deleteItem(category_name, item_name):
         flash('Item Successfully Deleted')
         return redirect(url_for('showCatalog'))
 
-    return render_template('delete_item.html', item=item, action='Edit Item' )
+    return render_template('delete_item.html', item=item, action='Edit Item')
 
 
 @app.route('/catalog/<category_name>/items')
@@ -183,7 +208,11 @@ def showCategoryItems(category_name):
 
     category = None
     try:
-        category = db.session.query(Category).filter_by(name=category_name).one()
+        category = (
+                    db.session.query(Category)
+                              .filter_by(name=category_name)
+                              .one()
+                   )
     except:
         if category is None:
             flash('Category "{}" does not exist'.format(category_name))
@@ -193,38 +222,50 @@ def showCategoryItems(category_name):
     if not isLoggedIn():
         items = db.session.query(Item).filter_by(category_id=category.id).all()
         return render_template('public_items.html',
-                                category_name=category.name,
-                                categories=categories,
-                                items=items)
+                               category_name=category.name,
+                               categories=categories,
+                               items=items)
 
-    items = db.session.query(Item).filter_by(category_id=category.id, user_id=login_session['user_id']).all()
+    items = (
+             db.session.query(Item)
+                       .filter_by(category_id=category.id,
+                                  user_id=login_session['user_id'])
+                       .all()
+            )
     if not items:
-        flash('You do not yet own any items in category {}'.format(category.name))
+        flash('You do not yet own any items in category {}'
+              .format(category.name))
     return render_template('items.html',
-                            category_name=category.name,
-                            categories=categories,
-                            items=items,
-                            provider=login_session['provider'])
+                           category_name=category.name,
+                           categories=categories,
+                           items=items,
+                           provider=login_session['provider'])
 
 
 @app.route('/catalog/<category_name>/items/<item_name>')
 def showCategoryItemDescription(category_name, item_name):
     category = None
     try:
-        category = db.session.query(Category).filter_by(name=category_name).one()
+        category = (
+                    db.session.query(Category)
+                              .filter_by(name=category_name).one()
+                   )
         item = db.session.query(Item).filter_by(name=item_name).one()
     except:
         if category is None:
             flash('Category "{}" does not exist'.format(category_name))
         else:
-            flash('Item "{}" for cagegory {} does not exist'.format(item_name, category.name))
+            flash('Item "{}" for cagegory {} does not exist'
+                  .format(item_name, category.name))
         return redirect(url_for('showCatalog'))
 
     creator = getUserId(item.user_id)
     if not isLoggedIn() or creator.id != login_session['user_id']:
             return render_template('public_description.html', item=item)
 
-    return render_template('description.html', item=item, provider=login_session['provider'])
+    return render_template('description.html',
+                           item=item,
+                           provider=login_session['provider'])
 
 
 @app.route('/login')
@@ -232,16 +273,20 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    return render_template('login.html', STATE=state, google_client_id=get_google_client_id())
+    return render_template('login.html',
+                           STATE=state,
+                           google_client_id=get_google_client_id())
 
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     '''
-    The example provided in OATH2 lessons stopped working for me... it did work
-    few weeks back, I think it may be realted to the shutdown of google+
-    I started @ https://developers.google.com/identity/sign-in/web/quick-migration-guide
-    I then followed the instructions @ https://developers.google.com/identity/sign-in/web/backend-auth
+    The example provided in OATH2 lessons stopped working for me...
+     it did work few weeks back, I think it may be realted to the shutdown of
+     google+. I started at:
+      https://developers.google.com/identity/sign-in/web/quick-migration-guide
+     I then followed the instructions at:
+      https://developers.google.com/identity/sign-in/web/backend-auth
     '''
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -251,13 +296,17 @@ def gconnect():
     token = request.data
 
     try:
-        idinfo = id_token.verify_oauth2_token(token, g_requests.Request(), get_google_client_id())
-        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+        idinfo = id_token.verify_oauth2_token(token,
+                                              g_requests.Request(),
+                                              get_google_client_id())
+        if idinfo['iss'] not in ['accounts.google.com',
+                                 'https://accounts.google.com']:
             response = make_response(json.dumps('Wrong issuer.'), 401)
             response.headers['Content-Type'] = 'application/json'
             return response
     except ValueError as e:
-        response = make_response(json.dumps('oauth_token error: {}'.format(e)), 401)
+        response = make_response(json.dumps('oauth_token error: {}'
+                                            .format(e)), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -271,11 +320,13 @@ def gconnect():
         user_id = createUser(login_session)
     login_session['user_id'] = user_id
 
-    #flash('Successfully logged in...')
-    response = make_response(json.dumps({ 'name': login_session['username']}), 200)
+    response = make_response(json.dumps({
+                                          'name': login_session['username']
+                                        }), 200)
     response.headers['Content-Type'] = 'application/json'
 
     return response
+
 
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
@@ -290,23 +341,33 @@ def fbconnect():
         'web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
-    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
-        app_id, app_secret, access_token)
+    url = ('https://graph.facebook.com/oauth/'
+           'access_token?grant_type=fb_exchange_token'
+           '&client_id=%s'
+           '&client_secret=%s'
+           '&fb_exchange_token=%s' % (
+                                       app_id,
+                                       app_secret,
+                                       access_token
+                                     ))
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
 
     # Use token to get user info from API
     userinfo_url = "https://graph.facebook.com/v2.8/me"
     '''
-        Due to the formatting for the result from the server token exchange we have to
-        split the token first on commas and select the first index which gives us the key : value
-        for the server access token then we split it on colons to pull out the actual token value
-        and replace the remaining quotes with nothing so that it can be used directly in the graph
-        api calls
+        Due to the formatting for the result from the server token exchange we
+        have to split the token first on commas and select the first index
+        which gives us the key : value for the server access token then we
+        split it on colons to pull out the actual token value and replace the
+        remaining quotes with nothing so that it can be used directly in the
+        graph api calls
     '''
     token = result.split(',')[0].split(':')[1].replace('"', '')
 
-    url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
+    url = ('https://graph.facebook.com/v2.8/me?access_token=%s'
+           '&fields=name,id,email' % token)
+
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
 
@@ -316,7 +377,7 @@ def fbconnect():
     if 'email' in data:
         login_session['email'] = data["email"]
     else:
-        #email not required when you create an id with phone number...
+        # email not required when you create an id with phone number...
         login_session['email'] = '{}@no_fb_email_avail'.format(data['name'])
     login_session['facebook_id'] = data["id"]
 
@@ -324,7 +385,8 @@ def fbconnect():
     login_session['access_token'] = token
 
     # Get user picture
-    url = 'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200' % token
+    url = ('https://graph.facebook.com/v2.8/me/picture'
+           '?access_token=%s&redirect=0&height=200&width=200' % token)
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
     data = json.loads(result)
@@ -336,7 +398,9 @@ def fbconnect():
         user_id = createUser(login_session)
     login_session['user_id'] = user_id
 
-    response = make_response(json.dumps({ 'name': login_session['username']}), 200)
+    response = make_response(json.dumps({
+                                          'name': login_session['username']
+                                        }), 200)
     response.headers['Content-Type'] = 'application/json'
     return response
 
@@ -351,20 +415,21 @@ def disconnect():
         flash('You are not logged in...')
         redirect(url_for('showCatalog'))
 
-
-    flash('{}, you are now logged out from {}'.format(login_session['username'], login_session['provider']))
+    flash('{}, you are now logged out from {}'
+          .format(login_session['username'], login_session['provider']))
     if provider == 'google':
-        #my research suggests id_token is all you need...
-        #  g-signin2 with googleuser.getAuthResponse appears to not expose auth_token
-        #  as a result, I not yet found how to 'revoke' the auth token - or equivellent
-        #  when all I have is id_token...
-        #  note: I think i should be using sub from id_token instead of email
+        # my research suggests id_token is all you need...
+        #  g-signin2 with googleuser.getAuthResponse appears to not expose
+        # auth_token as a result, I not yet found how to 'revoke' the
+        # auth token - or equivellent when all I have is id_token...
+        # TODO: I think i should be using sub from id_token instead of email
         pass
     else:
         facebook_id = login_session['facebook_id']
         # The access token must me included to successfully logout
         access_token = login_session['access_token']
-        url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
+        url = ('https://graph.facebook.com/%s/permissions?access_token=%s'
+               % (facebook_id, access_token))
         h = httplib2.Http()
         result = h.request(url, 'DELETE')[1]
         print('FB delete acess token result {}'.format(result))
@@ -382,8 +447,10 @@ def disconnect():
 
 @app.route('/catalog/JSON')
 def catalogJSON():
+    '''
+    # todo: rate limit...
+    '''
     categories = db.session.query(Category).all()
-    #print [c.serialize for c in categories]
     return jsonify(categories=[c.serialize for c in categories])
 
 
@@ -391,24 +458,24 @@ def load_category_table():
     """
     Pre-populate category table with the following list.
     """
-    categories = [ 'Soccer',
-                   'Basketball',
-                   'Baseball',
-                   'Frisbee',
-                   'Snowboarding',
-                   'Rock Climbing',
-                   'Football',
-                   'Skating',
-                   'Hockey'
-                  ]
+    categories = ['Soccer',
+                  'Basketball',
+                  'Baseball',
+                  'Frisbee',
+                  'Snowboarding',
+                  'Rock Climbing',
+                  'Football',
+                  'Skating',
+                  'Hockey']
+
     for category in categories:
         db.session.add(Category(name=category))
         db.session.commit()
 
 
 if __name__ == '__main__':
-    app.secret_key = 'super_secret_key'
-    #app.secret_key = "'\x7f\x90TW3#\xe8X\xcc\xd9VNb\xba\x91"
+    # app.secret_key = 'super_secret_key'
+    app.secret_key = "'\x7f\x90TW3#\xe8X\xcc\xd9VNb\xba\x91"
     app.debug = True
     load_category_table()
     app.run(host='0.0.0.0', port=8000)
