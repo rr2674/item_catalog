@@ -37,15 +37,14 @@
           </div>
 
 					<button type="submit" class="btn btn-default" id="submit" type="submit">
-						<span class="glyphicon glyphicon-save" aria-hidden="true"></span>
             {% if item is not defined %}
-            Add
+						  <span class="glyphicon glyphicon-save" aria-hidden="true"></span> Add
             {% else %}
-            Update
+						  <span class="glyphicon glyphicon-edit" aria-hidden="true"></span> Edit
             {% endif %}
 					</button>
 					<button type='button' class='btn btn-default delete' onClick="window.location='{{url_for('showCatalog')}}';">
-						<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>Cancel</button>
+						<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Cancel</button>
 				</div>
 			</form>
 		</div>

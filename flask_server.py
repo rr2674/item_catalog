@@ -86,16 +86,18 @@ def createUser(login_session):
 @app.route('/catalog')
 def showCatalog():
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
-    items = db.session.query(Item).order_by(desc(Item.create_date)).limit(5).all()
 
     if not isLoggedIn():
+        items = db.session.query(Item).order_by(desc(Item.create_date)).all()
         if not categories or not items:
             flash('We need data! Please sign in to add data...')
+
 
         return render_template('public_catalog.html',
                                categories=categories,
                                items=items)
 
+    items = db.session.query(Item).filter_by(user_id=login_session['user_id']).order_by(desc(Item.create_date)).all()
     return render_template('catalog.html',
                            categories=categories,
                            items=items,
@@ -172,7 +174,7 @@ def deleteItem(category_name, item_name):
         flash('Item Successfully Deleted')
         return redirect(url_for('showCatalog'))
 
-    return render_template('delete_item.html', item=item)
+    return render_template('delete_item.html', item=item, action='Edit Item' )
 
 
 @app.route('/catalog/<category_name>/items')
@@ -180,28 +182,29 @@ def showCategoryItems(category_name):
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
 
     category = None
-    items = None
     try:
         category = db.session.query(Category).filter_by(name=category_name).one()
-        items = db.session.query(Item).filter_by(category_id=category.id).all()
     except:
         if category is None:
             flash('Category "{}" does not exist'.format(category_name))
-        else:
-            flash('No Items for Cagegory "{}" exist'.format(category.name))
 
         return redirect(url_for('showCatalog'))
 
     if not isLoggedIn():
+        items = db.session.query(Item).filter_by(category_id=category.id).all()
         return render_template('public_items.html',
                                 category_name=category.name,
                                 categories=categories,
                                 items=items)
 
+    items = db.session.query(Item).filter_by(category_id=category.id, user_id=login_session['user_id']).all()
+    if not items:
+        flash('You do not yet own any items in category {}'.format(category.name))
     return render_template('items.html',
                             category_name=category.name,
                             categories=categories,
-                            items=items)
+                            items=items,
+                            provider=login_session['provider'])
 
 
 @app.route('/catalog/<category_name>/items/<item_name>')
@@ -221,7 +224,7 @@ def showCategoryItemDescription(category_name, item_name):
     if not isLoggedIn() or creator.id != login_session['user_id']:
             return render_template('public_description.html', item=item)
 
-    return render_template('description.html', item=item)
+    return render_template('description.html', item=item, provider=login_session['provider'])
 
 
 @app.route('/login')

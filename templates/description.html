@@ -1,34 +1,36 @@
 {% extends "main.html" %}
 {% block content %}
 
-<div class="row">
-  <div class="col-md-1"></div>
-  <div class="col-md-10">
-      <h3>{{item.name}}</h3>
-      <p>Descritpion: {{item.description}}</p>
+<!-- TODO: background color? -->
+<!-- TODO: margin:em2 ? -->
+ <div class='display-box'>
+  <div class="row">
+    <div class="col-md-1"></div>
+    <div class="col-md-10">
+       <h3>{{item.name}}</h3>
+       <p>Descritpion: {{item.description}}</p>
+    </div>
+    <div class="col-md-1"></div>
   </div>
-  <div class="col-md-1"></div>
-</div>
-
-<!-- TODO: glyph these -->
-<div class="row">
-  <div class="col-md-1"></div>
-  <div class="col-md-2">
-      <a href="{{url_for('editItem', category_name = item.category.name, item_name = item.name)}}">Edit</a>
-  </div>
-  <div class="col-md-1"></div>
-  <div class="col-md-2">
-      <a href="{{url_for('deleteItem', category_name = item.category.name, item_name = item.name)}}">Delete</a>
-  </div>
-  <div class="col-md-6"></div>
 </div>
 
 <div class="row">
-  <div class="col-md-5"></div>
+  <div class="col-md-1"></div>
   <div class="col-md-2">
-      <a href="{{url_for('showCategoryItems', category_name = item.category.name)}}">Done</a>
+      <button type='button' class='btn btn-default' onClick="window.location='{{url_for('editItem', category_name = item.category.name, item_name = item.name)}}';">
+        <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>Edit</button>
   </div>
-  <div class="col-md-5"></div>
+  <div class="col-md-1"></div>
+  <div class="col-md-2">
+    <button type='button' class='btn btn-default' onClick="window.location='{{url_for('deleteItem', category_name = item.category.name, item_name = item.name)}}';">
+      <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>Delete</button>
+  </div>
+  <div class="col-md-3"></div>
+  <div class="col-md-2">
+    <button type='button' class='btn btn-default' onClick="window.location='{{url_for('showCategoryItems', category_name = item.category.name)}}';">
+      <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>Back</button>
+  </div>
+  <div class="col-md-1"></div>
 </div>
 
 {% endblock %}

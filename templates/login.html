@@ -1,21 +1,37 @@
 <head>
+  <title>Catalog App</title>
+  <meta charset="utf-8">
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
   <script src="//apis.google.com/js/platform.js?onload=start"> </script>
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
   <meta name="google-signin-client_id" content="{{google_client_id}}">
 </head>
 <body>
-  <div id="signinButton">
-    <div
-      class="g-signin2"
-      data-scope="openid email"
-      data-onsuccess="onSignIn"
-      data-onfailure="onSignInFailure">
-    </div>
+<div class="login">
+  <div>
+    <h2>3rd Party Log In Options</h2>
+    <p>Please select one of the following to log into the <strong>Catalog App</strong>...</p>
   </div>
-
- <div id="result"></div>
+  <div id="result"></div>
+    <div class="login-auth-content">
+      <div id="signinButton" style="padding: 6px 14px;">
+        <div
+        class="g-signin2"
+        data-scope="openid email"
+        data-onsuccess="onSignIn"
+        data-onfailure="onSignInFailure">
+        </div>
+      </div>
+      <div>
+        <fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
+              <a href='javascript:sendTokenToServer()'>Login with Facebook</a>
+        </fb:login-button>
+      </div>
+    </div>
+</div>
 
 <script>
+//GOOGLE SIGN IN...
 function onSignIn(googleUser) {
   console.log('access_token: ' + gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token)
   // console.log('access_token: '+ googleUser.getAuthResponse().access_token)
@@ -48,8 +64,8 @@ function onSignInFailure() {
 }
 </script>
 
-<!--FACEBOOK SIGN IN -->
 <script>
+//FACEBOOK SIGN IN...
   window.fbAsyncInit = function() {
   FB.init({
     appId      : '1196285313882973',
@@ -98,10 +114,6 @@ function onSignInFailure() {
     });
   }
 </script>
-<button>
-    <fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
-        <a href='javascript:sendTokenToServer()'>Login with Facebook</a>
-    </fb:login-button>
-</button>
+
 </body>
 </html>
