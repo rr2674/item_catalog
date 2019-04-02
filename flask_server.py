@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from flask import Flask
 from flask import render_template
 from flask import request
@@ -109,6 +110,7 @@ def showCatalog():
                         .all()
             )
 
+    # provider is also used by main.html to toggle login/logout link
     return render_template('catalog.html',
                            categories=categories,
                            items=items,
@@ -134,8 +136,8 @@ def newCategory():
         )
         db.session.commit()
         return redirect(url_for('showCatalog'))
-
-    return render_template('new_catalog.html', action='New Item')
+    # action is also used by main.html to toggle login/logout link
+    return render_template('new_catalog.html', action='add')
 
 
 @app.route('/catalog/item/new', methods=['GET', 'POST'])
@@ -154,8 +156,9 @@ def newItem():
         return redirect(url_for('showCatalog'))
 
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
+    # action is also used by main.html to toggle login/logout link
     return render_template('add_edit_item.html',
-                           action='New Item',
+                           action='add',
                            categories=categories)
 
 
@@ -179,8 +182,9 @@ def editItem(category_name, item_name):
         return redirect(url_for('showCatalog'))
 
     categories = db.session.query(Category).order_by(asc(Category.name)).all()
+    # action is also used by main.html to toggle login/logout link
     return render_template('add_edit_item.html',
-                           action='Edit Item',
+                           action='edit',
                            item=item,
                            categories=categories)
 
@@ -199,7 +203,8 @@ def deleteItem(category_name, item_name):
         flash('Item Successfully Deleted')
         return redirect(url_for('showCatalog'))
 
-    return render_template('delete_item.html', item=item, action='Edit Item')
+    # action is also used by main.html to toggle login/logout link
+    return render_template('delete_item.html', item=item, action='delete')
 
 
 @app.route('/catalog/<category_name>/items')
@@ -235,6 +240,7 @@ def showCategoryItems(category_name):
     if not items:
         flash('You do not yet own any items in category {}'
               .format(category.name))
+    # provider is also used by main.html to toggle login/logout link
     return render_template('items.html',
                            category_name=category.name,
                            categories=categories,
@@ -263,6 +269,7 @@ def showCategoryItemDescription(category_name, item_name):
     if not isLoggedIn() or creator.id != login_session['user_id']:
             return render_template('public_description.html', item=item)
 
+    # provider is also used by main.html to toggle login/logout link
     return render_template('description.html',
                            item=item,
                            provider=login_session['provider'])

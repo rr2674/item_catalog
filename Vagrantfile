@@ -39,6 +39,7 @@ Vagrant.configure("2") do |config|
     #pip2 install sqlalchemy-utils
     pip2 install --upgrade google-auth 
     #pip2 install --upgrade google.auth.transport
+    pip2 install --upgrade pep8
 
     # maybe we can use pgsql...
     #su postgres -c 'createuser -dRS vagrant'

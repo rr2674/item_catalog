@@ -46,6 +46,15 @@ The application is built with:
 - [SQLAlchemy](https://www.sqlalchemy.org/) - Python SQL toolkit and Object Relational Mapper
 - [SQLite](https://www.sqlite.org/index.html) - A lightweigh, serverless, SQL database engine (PostgreSQL can easily be plugged into this project)
 
+#### Project structure
+The project still requires some work in order to bring it into spec with [flask project layout.](http://flask.pocoo.org/docs/1.0/tutorial/layout/)
+
+In the meantime, the following is required to run the application:
+- `static`  A directory that contains header image and css.  
+ - (scripts.js contains jquery methods that were used when experimenting with vertical tabs; this is not currently in use by the project)
+- `templates` A directory that contains Jinja2 HTML templates   
+- `database_setup.py` Contains class definitions for database tables
+- `flask_server.py`  A single file Flask application
 
 ## Dependencies
 
@@ -67,3 +76,7 @@ From a terminal, `cd` to the directory where your cloned or downloaded the Vagra
 - You can now run `python flask_server.py` as noted above
 
 Point your favorite browser to `http://localhost:8000/` and have fun!
+
+#### Task list
+- [ ] Better CSS styling of login.html
+- [ ] Better CSS positioning for add button within tabcontent div containter
