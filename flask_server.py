@@ -12,6 +12,8 @@ from flask import make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import asc, desc
 
+from functools import wraps
+
 import random
 import string
 import json
@@ -25,7 +27,14 @@ from database_setup import Base, Category, Item, User
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignment4.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = '{}://{}:{}@{}:{}/{}'.format(
+    'postgresql',
+    'catalog',
+    'whatever',
+    'localhost',
+    '5432',
+    'catalog')
+
 with app.app_context():
     print('=!' * 40)
 
@@ -54,12 +63,16 @@ def isLoggedIn():
     if 'username' not in login_session and 'user_id' not in login_session:
         return False
 
-    # TODO: this block of code should get deleted...
-    if getUserId(login_session['user_id']) is None:
-        print ('==> CLEANUP????')
-        return redirect(url_for('showCatalog'))
-
     return True
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not isLoggedIn():
+            return redirect(url_for('showLogin'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def getUserId(user_id):
@@ -118,10 +131,8 @@ def showCatalog():
 
 
 @app.route('/catalog/category/new', methods=['GET', 'POST'])
+@login_required
 def newCategory():
-    if not isLoggedIn():
-        return redirect('/login')
-
     if request.method == 'POST':
         q = (
              db.session.query(User)
@@ -141,10 +152,8 @@ def newCategory():
 
 
 @app.route('/catalog/item/new', methods=['GET', 'POST'])
+@login_required
 def newItem():
-    if not isLoggedIn():
-        return redirect('/login')
-
     if request.method == 'POST':
         newItem = Item(name=request.form['name'],
                        description=request.form['description'],
@@ -164,10 +173,8 @@ def newItem():
 
 @app.route('/catalog/<category_name>/items/<item_name>/edit',
            methods=['GET', 'POST'])
+@login_required
 def editItem(category_name, item_name):
-    if not isLoggedIn():
-        return redirect('/login')
-
     item = db.session.query(Item).filter_by(name=item_name).one()
     if request.method == 'POST':
         if request.form['name']:
@@ -191,10 +198,8 @@ def editItem(category_name, item_name):
 
 @app.route('/catalog/<category_name>/items/<item_name>/delete',
            methods=['GET', 'POST'])
+@login_required
 def deleteItem(category_name, item_name):
-    if not isLoggedIn():
-        return redirect('/login')
-
     item = db.session.query(Item).filter_by(name=item_name).one()
 
     if request.method == 'POST':
@@ -481,8 +486,7 @@ def load_category_table():
 
 
 if __name__ == '__main__':
-    # app.secret_key = 'super_secret_key'
     app.secret_key = "'\x7f\x90TW3#\xe8X\xcc\xd9VNb\xba\x91"
     app.debug = True
-    load_category_table()
+    # load_category_table()
     app.run(host='0.0.0.0', port=8000)

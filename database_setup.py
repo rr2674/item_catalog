@@ -11,14 +11,17 @@ from passlib.apps import custom_app_context as pwd_context
 import random, string
 from itsdangerous import(TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
-#from sqlalchemy.orm import relationship, sessionmaker
+#from sqlalchemy.orm import relationship
+from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 secret_key = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
 
 
 class User(Base):
-    __tablename__ = 'user'
+    #changed name from user to my_users...
+    # as users is a postgresql reserve word
+    __tablename__ = 'my_users'
     id = Column(Integer, primary_key=True)
     username = Column(String(32), index=True)
     picture = Column(String)
@@ -48,7 +51,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column(Integer, ForeignKey('my_users.id'))
     user = relationship('User')
     items = relationship('Item', back_populates='category')
 
@@ -81,7 +84,7 @@ class Item(Base):
     create_date = Column(DateTime, default=datetime.utcnow)
     category_id = Column(Integer, ForeignKey('category.id'))
     category = relationship('Category')
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column(Integer, ForeignKey('my_users.id'))
     user = relationship('User')
 
 
@@ -100,7 +103,32 @@ class Item(Base):
         }
 
 
-engine = create_engine('sqlite:///assignment4.db')
+def load_category_table(session):
+    """
+    Pre-populate category table with the following list.
+    """
+    categories = ['Soccer',
+                  'Basketball',
+                  'Baseball',
+                  'Frisbee',
+                  'Snowboarding',
+                  'Rock Climbing',
+                  'Football',
+                  'Skating',
+                  'Hockey']
 
-Base.metadata.drop_all(engine)
-Base.metadata.create_all(engine)
+    for category in categories:
+        session.add(Category(name=category))
+        session.commit()
+
+
+if __name__ == "__main__":
+    engine = create_engine('postgresql://catalog:whatever@localhost:5432/catalog')
+
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+
+    load_category_table(session)
